@@ -39,6 +39,9 @@
   border: 1px solid #e2e8f0;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .no-messages {
@@ -67,15 +70,37 @@
 
 .message {
   padding: 12px 16px;
-  margin: 8px 0;
+  margin: 4px 0;
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   max-width: 85%;
-  line-height: 1.5;
-  font-size: 0.95rem;
-  border: 1px solid #e2e8f0;
+  align-self: flex-start;
   animation: fadeIn 0.3s ease-in-out;
+  border: 1px solid #e2e8f0;
+}
+
+.message-own {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  align-self: flex-end;
+  border: none;
+}
+
+.message-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: right;
+}
+
+.message-own .message-time {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 @keyframes fadeIn {
