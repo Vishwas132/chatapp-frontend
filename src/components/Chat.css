@@ -78,6 +78,7 @@
   align-self: flex-start;
   animation: fadeIn 0.3s ease-in-out;
   border: 1px solid #e2e8f0;
+  color: #1a1a1a;
 }
 
 .message-own {
