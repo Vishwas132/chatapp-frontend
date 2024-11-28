@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, VStack, Input, Button, Text, Container } from '@chakra-ui/react';
+import './Chat.css';
 import io from 'socket.io-client';
 
 const Chat = () => {
@@ -38,35 +38,35 @@ const Chat = () => {
   };
 
   return (
-    <Container maxW="container.md" py={8}>
-      <VStack spacing={4} align="stretch">
-        <Box
-          height="400px"
-          overflowY="auto"
-          borderWidth={1}
-          borderRadius="lg"
-          p={4}
-        >
-          {messages.map((msg, index) => (
-            <Text key={index} p={2}>
+    <div className="chat-container">
+      <div className="chat-header">
+        <h1>Real-Time Chat</h1>
+        <p>Send a message to get started</p>
+      </div>
+      <div className="messages">
+        {messages.length === 0 ? (
+          <div className="no-messages">No messages yet. Start the conversation!</div>
+        ) : (
+          messages.map((msg, index) => (
+            <div key={index} className="message">
               {msg}
-            </Text>
-          ))}
-        </Box>
-        <form onSubmit={sendMessage} style={{ width: '100%' }}>
-          <VStack spacing={4}>
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your message..."
-            />
-            <Button type="submit" colorScheme="blue" width="100%">
-              Send
-            </Button>
-          </VStack>
-        </form>
-      </VStack>
-    </Container>
+            </div>
+          ))
+        )}
+      </div>
+      <form onSubmit={sendMessage} className="message-form">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Type your message..."
+          className="message-input"
+        />
+        <button type="submit" className="send-button">
+          Send
+        </button>
+      </form>
+    </div>
   );
 };
 
