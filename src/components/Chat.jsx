@@ -18,7 +18,22 @@ const Chat = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    const newSocket = io('http://localhost:1337');
+    const newSocket = io('http://localhost:1337', {
+      transports: ['polling', 'websocket'],
+      withCredentials: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      autoConnect: true
+    });
+
+    newSocket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Connection error:', error.message);
+    });
+
     setSocket(newSocket);
 
     // Cleanup on component unmount
