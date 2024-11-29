@@ -6,6 +6,7 @@ const Chat = ({ user }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
+  const [activeUsers, setActiveUsers] = useState([]);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -63,9 +64,49 @@ const Chat = ({ user }) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
 
+    // Listen for active users updates
+    socket.on('active_users', (users) => {
+      setActiveUsers(users);
+    });
+
+    // Listen for individual user status updates
+    socket.on('user_status', (userStatus) => {
+      setActiveUsers((prevUsers) => {
+        const userIndex = prevUsers.findIndex(u => u.userId === userStatus.userId);
+        if (userIndex === -1) {
+          return [...prevUsers, userStatus];
+        }
+        const newUsers = [...prevUsers];
+        newUsers[userIndex] = userStatus;
+        return newUsers;
+      });
+    });
+
+    // Set up activity monitoring
+    let activityTimeout;
+    const handleActivity = () => {
+      if (activityTimeout) {
+        clearTimeout(activityTimeout);
+      }
+      socket.emit('status_change', 'online');
+      activityTimeout = setTimeout(() => {
+        socket.emit('status_change', 'away');
+      }, 300000); // 5 minutes
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keypress', handleActivity);
+
     return () => {
       socket.off('previous-messages');
       socket.off('message');
+      socket.off('active_users');
+      socket.off('user_status');
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keypress', handleActivity);
+      if (activityTimeout) {
+        clearTimeout(activityTimeout);
+      }
     };
   }, [socket]);
 
@@ -82,37 +123,57 @@ const Chat = ({ user }) => {
     }
   };
 
+  const getUserStatus = (userId) => {
+    const userStatus = activeUsers.find(u => u.userId === userId);
+    return userStatus?.status || 'offline';
+  };
+
   return (
     <div className="chat-container">
-      <div className="messages">
-        {messages.length === 0 ? (
-          <div className="no-messages">No messages yet. Start the conversation!</div>
-        ) : (
-          messages.map((msg) => (
-            <div 
-              key={msg.id} 
-              className={`message ${msg.userId === user.id ? 'message-own' : ''}`}
-            >
-              <div className="message-header">
-                <span className="message-username">{msg.username || 'Unknown'}</span>
-                <span className="message-time">{formatTime(msg.timestamp)}</span>
-              </div>
-              <div className="message-content">{msg.text}</div>
+      <div className="users-sidebar">
+        <h3>Active Users</h3>
+        <div className="users-list">
+          {activeUsers.map((activeUser) => (
+            <div key={activeUser.userId} className="user-item">
+              <span className={`status-indicator ${activeUser.status}`}></span>
+              <span className="username">{activeUser.username}</span>
             </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
+          ))}
+        </div>
       </div>
-      <form onSubmit={sendMessage} className="message-form">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message..."
-          className="message-input"
-        />
-        <button type="submit" className="send-button">Send</button>
-      </form>
+      <div className="chat-main">
+        <div className="messages">
+          {messages.length === 0 ? (
+            <div className="no-messages">No messages yet. Start the conversation!</div>
+          ) : (
+            messages.map((msg) => (
+              <div 
+                key={msg.id} 
+                className={`message ${msg.userId === user.id ? 'message-own' : ''}`}
+              >
+                <div className="message-header">
+                  <div className="user-info">
+                    <span className={`status-indicator ${getUserStatus(msg.userId)}`}></span>
+                    <span className="message-username">{msg.username || 'Unknown'}</span>
+                  </div>
+                  <span className="message-time">{formatTime(msg.timestamp)}</span>
+                </div>
+                <div className="message-content">{msg.text}</div>
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        <form className="message-input" onSubmit={sendMessage}>
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a message..."
+          />
+          <button type="submit">Send</button>
+        </form>
+      </div>
     </div>
   );
 };
