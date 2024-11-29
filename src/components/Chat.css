@@ -1,8 +1,9 @@
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   background: #f5f5f5;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -145,7 +146,7 @@
 }
 
 .message {
-  max-width: 70%;
+  max-width: fit-content;
   margin-bottom: 20px;
   padding: 12px;
   border-radius: 8px;
