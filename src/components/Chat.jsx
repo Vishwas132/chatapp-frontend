@@ -35,7 +35,7 @@ const Chat = ({ user }) => {
 
     // Initialize socket connection with JWT token
     const token = localStorage.getItem('jwt');
-    const newSocket = io('http://localhost:1337', {
+    const newSocket = io(import.meta.env.VITE_BACKEND_URL, {
       transports: ['polling', 'websocket'],
       withCredentials: true,
       reconnectionAttempts: 5,
@@ -104,7 +104,7 @@ const Chat = ({ user }) => {
       socket.emit('status_change', 'online');
       activityTimeout = setTimeout(() => {
         socket.emit('status_change', 'away');
-      }, 300000); // 5 minutes
+      }, import.meta.env.VITE_IDLE_TIMEOUT || 300000); // Default to 5 minutes if not set
     };
 
     window.addEventListener('mousemove', handleActivity);

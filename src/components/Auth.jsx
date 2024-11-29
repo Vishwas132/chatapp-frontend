@@ -20,7 +20,7 @@ const Auth = ({ onAuthSuccess }) => {
     e.preventDefault();
     try {
       const endpoint = isLogin ? 'auth/local' : 'auth/local/register';
-      const response = await axios.post(`http://localhost:1337/api/${endpoint}`, {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}`, {
         identifier: isLogin ? formData.email : undefined,
         username: !isLogin ? formData.username : undefined,
         email: formData.email,
