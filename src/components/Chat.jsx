@@ -2,11 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import './Chat.css';
 import io from 'socket.io-client';
 
-const Chat = () => {
+const Chat = ({ user }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [userId, setUserId] = useState(localStorage.getItem('userId'));
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -18,21 +17,23 @@ const Chat = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Generate a persistent user ID if not exists
-    if (!userId) {
-      const newUserId = 'user_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('userId', newUserId);
-      setUserId(newUserId);
-    }
+    if (!user) return;
 
-    // Initialize socket connection
+    // Initialize socket connection with JWT token
+    const token = localStorage.getItem('jwt');
     const newSocket = io('http://localhost:1337', {
       transports: ['polling', 'websocket'],
       withCredentials: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       autoConnect: true,
-      query: { userId } // Send userId with connection
+      auth: {
+        token
+      },
+      query: { 
+        userId: user.id,
+        username: user.username
+      }
     });
 
     newSocket.on('connect', () => {
@@ -47,7 +48,7 @@ const Chat = () => {
 
     // Cleanup on component unmount
     return () => newSocket.close();
-  }, [userId]);
+  }, [user]);
 
   useEffect(() => {
     if (!socket) return;
@@ -83,10 +84,6 @@ const Chat = () => {
 
   return (
     <div className="chat-container">
-      <div className="chat-header">
-        <h1>Real-Time Chat</h1>
-        <p>Send a message to get started</p>
-      </div>
       <div className="messages">
         {messages.length === 0 ? (
           <div className="no-messages">No messages yet. Start the conversation!</div>
@@ -94,10 +91,13 @@ const Chat = () => {
           messages.map((msg) => (
             <div 
               key={msg.id} 
-              className={`message ${msg.userId === userId ? 'message-own' : ''}`}
+              className={`message ${msg.userId === user.id ? 'message-own' : ''}`}
             >
+              <div className="message-header">
+                <span className="message-username">{msg.username || 'Unknown'}</span>
+                <span className="message-time">{formatTime(msg.timestamp)}</span>
+              </div>
               <div className="message-content">{msg.text}</div>
-              <div className="message-time">{formatTime(msg.timestamp)}</div>
             </div>
           ))
         )}
@@ -111,9 +111,7 @@ const Chat = () => {
           placeholder="Type your message..."
           className="message-input"
         />
-        <button type="submit" className="send-button">
-          Send
-        </button>
+        <button type="submit" className="send-button">Send</button>
       </form>
     </div>
   );
