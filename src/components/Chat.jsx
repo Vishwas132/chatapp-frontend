@@ -7,6 +7,8 @@ const Chat = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
   const [activeUsers, setActiveUsers] = useState([]);
+  const [showUserList, setShowUserList] = useState(false);
+  const userListRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -16,6 +18,17 @@ const Chat = ({ user }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userListRef.current && !userListRef.current.contains(event.target)) {
+        setShowUserList(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -128,52 +141,121 @@ const Chat = ({ user }) => {
     return userStatus?.status || 'offline';
   };
 
+  const getOnlineCount = () => {
+    return activeUsers.filter(user => user.status === 'online').length;
+  };
+
+  const getInitials = (username) => {
+    return username
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'online': return '#4caf50';
+      case 'away': return '#ff9800';
+      default: return '#9e9e9e';
+    }
+  };
+
   return (
     <div className="chat-container">
-      <div className="users-sidebar">
-        <h3>Active Users</h3>
-        <div className="users-list">
-          {activeUsers.map((activeUser) => (
-            <div key={activeUser.userId} className="user-item">
-              <span className={`status-indicator ${activeUser.status}`}></span>
-              <span className="username">{activeUser.username}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="chat-main">
-        <div className="messages">
-          {messages.length === 0 ? (
-            <div className="no-messages">No messages yet. Start the conversation!</div>
-          ) : (
-            messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={`message ${msg.userId === user.id ? 'message-own' : ''}`}
-              >
-                <div className="message-header">
-                  <div className="user-info">
-                    <span className={`status-indicator ${getUserStatus(msg.userId)}`}></span>
-                    <span className="message-username">{msg.username || 'Unknown'}</span>
-                  </div>
-                  <span className="message-time">{formatTime(msg.timestamp)}</span>
+      <div className="chat-header">
+        <h2>Chat Room</h2>
+        <div className="active-users" ref={userListRef}>
+          <div 
+            className="avatar-stack" 
+            onClick={() => setShowUserList(!showUserList)}
+            title={`${getOnlineCount()} online users`}
+          >
+            {activeUsers
+              .filter(u => u.status === 'online')
+              .slice(0, 3)
+              .map((activeUser, index) => (
+                <div 
+                  key={activeUser.userId}
+                  className="avatar"
+                  style={{ 
+                    zIndex: activeUsers.length - index,
+                    marginLeft: index > 0 ? '-8px' : '0'
+                  }}
+                >
+                  {getInitials(activeUser.username)}
+                  <span 
+                    className="status-dot"
+                    style={{ backgroundColor: getStatusColor(activeUser.status) }}
+                  />
                 </div>
-                <div className="message-content">{msg.text}</div>
+              ))}
+            {activeUsers.length > 3 && (
+              <div className="avatar more-avatar">
+                +{activeUsers.length - 3}
               </div>
-            ))
+            )}
+          </div>
+          {showUserList && (
+            <div className="user-list-popover">
+              <h3>Active Users ({getOnlineCount()})</h3>
+              {activeUsers.map(activeUser => (
+                <div key={activeUser.userId} className="user-item">
+                  <div className="user-avatar">
+                    {getInitials(activeUser.username)}
+                    <span 
+                      className="status-dot"
+                      style={{ backgroundColor: getStatusColor(activeUser.status) }}
+                    />
+                  </div>
+                  <div className="user-info">
+                    <span className="username">{activeUser.username}</span>
+                    <span className="status-text">{activeUser.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
-        <form className="message-input" onSubmit={sendMessage}>
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
-          />
-          <button type="submit">Send</button>
-        </form>
       </div>
+      <div className="messages">
+        {messages.length === 0 ? (
+          <div className="no-messages">No messages yet. Start the conversation!</div>
+        ) : (
+          messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`message ${msg.userId === user.id ? 'message-own' : ''}`}
+            >
+              <div className="message-header">
+                <div className="user-info">
+                  <div className="message-avatar">
+                    {getInitials(msg.username || 'Unknown')}
+                    <span 
+                      className="status-dot"
+                      style={{ backgroundColor: getStatusColor(getUserStatus(msg.userId)) }}
+                    />
+                  </div>
+                  <span className="message-username">{msg.username || 'Unknown'}</span>
+                </div>
+                <span className="message-time">{formatTime(msg.timestamp)}</span>
+              </div>
+              <div className="message-content">{msg.text}</div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+      <form className="message-input" onSubmit={sendMessage}>
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Type a message..."
+        />
+        <button type="submit">Send</button>
+      </form>
     </div>
   );
 };
